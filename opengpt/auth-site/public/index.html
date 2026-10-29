@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Log in to OpenGPT</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root { --ink:#0f1320; --panel:#151a2a; --panel-2:#1b2135; --line:#262d45; --text:#e9ecf5; --muted:#8d96b0; --cobalt:#5b8def; --cobalt-d:#4676d9; --amber:#ffb84d; --danger:#ff7b7b; }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body { background: radial-gradient(900px 500px at 50% 120%, #1a2350 0%, transparent 60%), var(--ink); color: var(--text); font-family: "IBM Plex Sans", system-ui, sans-serif; display: grid; place-items: center; padding: 20px; -webkit-font-smoothing: antialiased; }
+    .card { width: min(420px, 100%); background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 32px; }
+    .brand { display: flex; align-items: center; gap: 12px; font-family: "Bricolage Grotesque", system-ui, sans-serif; font-weight: 800; font-size: 22px; margin-bottom: 24px; }
+    .mark { width: 28px; height: 28px; border-radius: 50%; border: 3px solid var(--cobalt); position: relative; }
+    .mark::after { content: ""; position: absolute; inset: 4px; border-radius: 50%; background: var(--cobalt); }
+    h1 { font-family: "Bricolage Grotesque", system-ui, sans-serif; font-size: 28px; letter-spacing: -0.02em; margin: 0 0 6px; }
+    .sub { color: var(--muted); margin: 0 0 22px; }
+    .tabs { display: grid; grid-template-columns: 1fr 1fr; background: var(--ink); border: 1px solid var(--line); border-radius: 12px; padding: 4px; margin-bottom: 20px; }
+    .tabs button { background: none; border: 0; color: var(--muted); padding: 9px; border-radius: 9px; font: inherit; font-weight: 500; cursor: pointer; }
+    .tabs button[aria-selected="true"] { background: var(--panel-2); color: var(--text); }
+    label { display: block; font-size: 14px; font-weight: 500; margin: 14px 0 6px; }
+    input { width: 100%; background: var(--ink); border: 1px solid var(--line); color: var(--text); border-radius: 12px; padding: 12px 14px; font: inherit; }
+    input:focus { outline: 2px solid var(--cobalt); outline-offset: 1px; border-color: transparent; }
+    .btn { width: 100%; border: 0; border-radius: 12px; padding: 13px; font: inherit; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; }
+    .primary { background: var(--cobalt); color: #fff; margin-top: 20px; }
+    .primary:hover { background: var(--cobalt-d); }
+    .google { background: #fff; color: #1f1f1f; }
+    .google:hover { background: #f0f0f0; }
+    .btn:disabled { opacity: 0.6; cursor: wait; }
+    .or { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 13px; margin: 20px 0; }
+    .or::before, .or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+    .link { background: none; border: 0; color: var(--cobalt); font: inherit; font-size: 14px; cursor: pointer; padding: 0; margin-top: 14px; }
+    .msg { border-radius: 10px; padding: 10px 12px; font-size: 14px; margin-bottom: 16px; }
+    .msg.err { background: #2a1519; color: var(--danger); border: 1px solid #4a2128; }
+    .msg.ok { background: #122419; color: #7ee0a3; border: 1px solid #1d4029; }
+    .center { text-align: center; color: var(--muted); }
+    .hidden { display: none !important; }
+    :focus-visible { outline: 2px solid var(--cobalt); outline-offset: 2px; }
+  </style>
+</head>
+<body>
+<main class="card">
+  <div class="brand"><span class="mark"></span>OpenGPT</div>
+
+  <div id="loading" class="center">Signing you in…</div>
+
+  <div id="form" class="hidden">
+    <h1 id="title">Log in</h1>
+    <p class="sub" id="sub">Welcome back. Pick up where you left off.</p>
+    <div id="notice" class="msg hidden" role="alert"></div>
+
+    <button id="googleBtn" class="btn google" type="button">
+      <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.5-4.1 7-10.2 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.2.8-4.7l-7.9-6.1A24 24 0 0 0 0 24c0 3.9.9 7.5 2.6 10.8l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 12-2.1 16-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.4 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg>
+      Continue with Google
+    </button>
+    <div class="or">or use email</div>
+
+    <form id="emailForm" novalidate>
+      <div id="nameRow" class="hidden">
+        <label for="name">Name</label>
+        <input id="name" type="text" autocomplete="name">
+      </div>
+      <label for="email">Email</label>
+      <input id="email" type="email" autocomplete="email" required>
+      <label for="password">Password</label>
+      <input id="password" type="password" autocomplete="current-password" minlength="6" required>
+      <button id="submitBtn" class="btn primary" type="submit">Log in</button>
+    </form>
+    <button id="forgotBtn" class="link" type="button">Forgot your password?</button>
+  </div>
+
+  <div id="blocked" class="msg err hidden" role="alert"></div>
+</main>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+  import {
+    getAuth, onAuthStateChanged, signOut, signInWithPopup, GoogleAuthProvider,
+    signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, sendPasswordResetEmail
+  } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+
+  /* =====================  EDIT THESE  ===================== */
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyCEqVT9IjaoiGEtWtN6tZwHqaZ8HzPzG34",
+  authDomain: "open-gpt2013.firebaseapp.com",
+  projectId: "open-gpt2013",
+  storageBucket: "open-gpt2013.firebasestorage.app",
+  messagingSenderId: "451249567875",
+  appId: "1:451249567875:web:3ba7c595169bd7acba03b6",
+  measurementId: "G-GCZTCQDZV7"
+};
+  // Only these app addresses may receive a login. This stops attackers from using this page to steal sign-ins.
+  const ALLOWED_APP_ORIGINS = [
+    "http://localhost:3000",
+    // "https://your-opengpt-domain.com",
+  ];
+  /* ======================================================== */
+
+  const $ = (id) => document.getElementById(id);
+  const params = new URLSearchParams(location.search);
+  const redirect = params.get('redirect');
+  const wantsLogout = params.get('logout') === '1';
+
+  let holdFinish = false; // pauses the auto-redirect while a new account's name is being saved
+  let target = null;
+  try {
+    const u = new URL(redirect);
+    if (ALLOWED_APP_ORIGINS.includes(u.origin)) target = u;
+  } catch { /* invalid */ }
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  function showBlocked(text) {
+    $('loading').classList.add('hidden'); $('form').classList.add('hidden');
+    $('blocked').textContent = text; $('blocked').classList.remove('hidden');
+  }
+
+  if (!target) {
+    let got = 'nothing (the page was opened without ?redirect=)';
+    try { if (redirect) got = new URL(redirect).origin; } catch { got = 'an invalid address: ' + redirect; }
+    showBlocked(
+      'Sign-in blocked. This page received: ' + got +
+      '. Allowed app addresses: ' + ALLOWED_APP_ORIGINS.join(', ') +
+      '. Open your app at one of those exact addresses and press Log in, or add the received address to ALLOWED_APP_ORIGINS in auth-site/index.html and redeploy.'
+    );
+  } else {
+    start();
+  }
+
+  async function start() {
+    if (wantsLogout) await signOut(auth);
+    onAuthStateChanged(auth, (user) => {
+      if (user && !wantsLogout && !holdFinish) finish(user);
+      else { $('loading').classList.add('hidden'); $('form').classList.remove('hidden'); }
+    });
+  }
+
+  // Sends the person back to the app, signed in.
+  async function finish(user) {
+    $('form').classList.add('hidden'); $('loading').classList.remove('hidden');
+    const idToken = await user.getIdToken(true);
+    const url = new URL(target.toString());
+    // The hash is never sent to any server, so the token stays between the browser and the app.
+    url.hash = new URLSearchParams({ token: idToken, refresh: user.refreshToken }).toString();
+    location.replace(url.toString());
+  }
+
+  function notice(text, kind = 'err') {
+    const n = $('notice'); n.textContent = text; n.className = 'msg ' + kind;
+  }
+  const friendly = (e) => ({
+    'auth/invalid-credential': 'Wrong email or password.',
+    'auth/invalid-email': 'Enter a valid email address.',
+    'auth/user-not-found': 'No account with that email. Try “Sign up”.',
+    'auth/wrong-password': 'Wrong email or password.',
+    'auth/email-already-in-use': 'That email already has an account. Try logging in.',
+    'auth/weak-password': 'Use a password with at least 6 characters.',
+    'auth/too-many-requests': 'Too many attempts. Wait a bit and try again.',
+    'auth/popup-closed-by-user': 'The Google window was closed before finishing.',
+    'auth/popup-blocked': 'Your browser blocked the Google window. Allow pop-ups and try again.',
+    'auth/unauthorized-domain': 'This domain is not authorized in Firebase. Add it under Authentication > Settings > Authorized domains.',
+    'auth/operation-not-allowed': 'This sign-in method is not turned on in Firebase yet.',
+    'auth/network-request-failed': 'Network problem. Check your connection.'
+  }[e.code] || 'Something went wrong. Please try again.');
+
+  /* Log in / Sign up toggle */
+  let signup = false;
+  function setMode(isSignup) {
+    signup = isSignup;
+    $('title').textContent = isSignup ? 'Create your account' : 'Log in';
+    $('sub').textContent = isSignup ? 'It takes a few seconds.' : 'Welcome back. Pick up where you left off.';
+    $('submitBtn').textContent = isSignup ? 'Create account' : 'Log in';
+    $('nameRow').classList.toggle('hidden', !isSignup);
+    $('password').autocomplete = isSignup ? 'new-password' : 'current-password';
+    $('forgotBtn').classList.toggle('hidden', isSignup);
+    $('notice').className = 'msg hidden';
+    $('toggleBtn').textContent = isSignup ? 'Already have an account? Log in' : 'New here? Create an account';
+  }
+  const toggle = document.createElement('button');
+  toggle.id = 'toggleBtn'; toggle.type = 'button'; toggle.className = 'link';
+  toggle.style.display = 'block';
+  $('forgotBtn').after(toggle);
+  toggle.onclick = () => setMode(!signup);
+  setMode(false);
+
+  async function run(btn, fn) {
+    btn.disabled = true; $('notice').className = 'msg hidden';
+    try { await fn(); } catch (e) { notice(friendly(e)); } finally { btn.disabled = false; }
+  }
+
+  $('googleBtn').onclick = () => run($('googleBtn'), () => signInWithPopup(auth, new GoogleAuthProvider()));
+
+  $('emailForm').onsubmit = (ev) => {
+    ev.preventDefault();
+    const email = $('email').value.trim(), pass = $('password').value;
+    if (!email || !pass) return notice('Enter your email and password.');
+    run($('submitBtn'), async () => {
+      if (signup) {
+        holdFinish = true;
+        try {
+          const cred = await createUserWithEmailAndPassword(auth, email, pass);
+          const name = $('name').value.trim();
+          if (name) await updateProfile(cred.user, { displayName: name });
+          holdFinish = false;
+          await finish(cred.user);
+        } finally { holdFinish = false; }
+      } else {
+        await signInWithEmailAndPassword(auth, email, pass);
+      }
+    });
+  };
+
+  $('forgotBtn').onclick = () => {
+    const email = $('email').value.trim();
+    if (!email) return notice('Type your email above first, then press “Forgot your password?”.');
+    run($('forgotBtn'), async () => {
+      await sendPasswordResetEmail(auth, email);
+      notice('Check your inbox for a password reset link.', 'ok');
+    });
+  };
+</script>
+</body>
+</html>
