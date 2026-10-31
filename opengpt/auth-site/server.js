@@ -9,6 +9,7 @@ const {
   AI_API_KEY,
   AI_BASE_URL = 'https://api.openai.com/v1',
   AI_MODEL = 'gpt-4o-mini',
+  AI_VISION_MODEL = '',
   PORT = 3000,
 } = process.env;
 
@@ -16,6 +17,7 @@ if (!FIREBASE_PROJECT_ID || !AI_API_KEY) {
   console.error('Missing FIREBASE_PROJECT_ID or AI_API_KEY. Copy .env.example to .env and fill it in.');
   process.exit(1);
 }
+console.log(`AI config -> base: ${AI_BASE_URL} | model: ${AI_MODEL} | vision: ${AI_VISION_MODEL || 'not set'} | key starts with: ${AI_API_KEY.slice(0, 4)}`);
 
 // Verifying ID tokens only needs the project id (Google's public keys are fetched automatically).
 admin.initializeApp({ projectId: FIREBASE_PROJECT_ID });
@@ -24,7 +26,7 @@ const SYSTEM_PROMPT =
   'You are OpenGPT, a helpful, concise and friendly AI assistant. Use Markdown for formatting and code blocks for code.';
 
 const app = express();
-app.use(express.json({ limit: '2mb' }));
+app.use(express.json({ limit: '14mb' })); // images arrive as resized base64
 app.use(express.static(path.join(__dirname, 'public')));
 
 // --- Auth middleware: every API call must carry a valid Firebase ID token ---
@@ -51,15 +53,54 @@ function rateLimit(req, res, next) {
   next();
 }
 
+// --- Message validation ---
+const MAX_IMAGES = 3;
+const MAX_IMAGE_CHARS = 2_500_000;
+const IMAGE_RE = /^data:image\/(jpeg|png|webp|gif);base64,/;
+
+function cleanMessage(m) {
+  if (!m || (m.role !== 'user' && m.role !== 'assistant')) return null;
+  if (typeof m.content === 'string') {
+    return m.content.trim() ? { role: m.role, content: m.content.slice(0, 20000) } : null;
+  }
+  if (m.role === 'user' && Array.isArray(m.content)) {
+    const parts = [];
+    let images = 0;
+    for (const p of m.content) {
+      if (p && p.type === 'text' && typeof p.text === 'string') {
+        parts.push({ type: 'text', text: p.text.slice(0, 20000) });
+      } else if (
+        p && p.type === 'image_url' && p.image_url && typeof p.image_url.url === 'string' &&
+        IMAGE_RE.test(p.image_url.url) && p.image_url.url.length < MAX_IMAGE_CHARS && images < MAX_IMAGES
+      ) {
+        parts.push({ type: 'image_url', image_url: { url: p.image_url.url } });
+        images++;
+      }
+    }
+    return parts.length ? { role: 'user', content: parts } : null;
+  }
+  return null;
+}
+
 app.post('/api/chat', requireAuth, rateLimit, async (req, res) => {
-  const { messages } = req.body || {};
+  const { messages, instructions } = req.body || {};
   if (!Array.isArray(messages) || messages.length === 0 || messages.length > 100) {
     return res.status(400).json({ error: 'Invalid messages.' });
   }
-  const clean = messages
-    .filter((m) => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string' && m.content.trim())
-    .map((m) => ({ role: m.role, content: m.content.slice(0, 20000) }));
+  const clean = messages.map(cleanMessage).filter(Boolean);
   if (!clean.length) return res.status(400).json({ error: 'Empty conversation.' });
+
+  const hasImages = clean.some((m) => Array.isArray(m.content));
+  if (hasImages && !AI_VISION_MODEL) {
+    return res.status(400).json({
+      error: 'Image upload is not set up yet. The server owner must set AI_VISION_MODEL to a model that accepts images.',
+    });
+  }
+
+  const extra = typeof instructions === 'string' ? instructions.trim().slice(0, 1500) : '';
+  const system = extra
+    ? `${SYSTEM_PROMPT}\n\nThe user set these custom instructions. Follow them when they do not conflict with safety:\n${extra}`
+    : SYSTEM_PROMPT;
 
   const ctrl = new AbortController();
   res.on('close', () => ctrl.abort());
@@ -69,9 +110,9 @@ app.post('/api/chat', requireAuth, rateLimit, async (req, res) => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${AI_API_KEY}` },
       body: JSON.stringify({
-        model: AI_MODEL,
+        model: hasImages ? AI_VISION_MODEL : AI_MODEL,
         stream: true,
-        messages: [{ role: 'system', content: SYSTEM_PROMPT }, ...clean],
+        messages: [{ role: 'system', content: system }, ...clean],
       }),
       signal: ctrl.signal,
     });
@@ -79,7 +120,11 @@ app.post('/api/chat', requireAuth, rateLimit, async (req, res) => {
     if (!upstream.ok) {
       const detail = await upstream.text();
       console.error('Upstream error', upstream.status, detail.slice(0, 500));
-      return res.status(502).json({ error: `The AI service returned an error (${upstream.status}). Check your API key and model name.` });
+      let reason = '';
+      try { reason = JSON.parse(detail).error?.message || ''; } catch { /* not JSON */ }
+      return res.status(502).json({
+        error: `AI provider error ${upstream.status}: ${reason || 'check your API key, model name and quota.'}`,
+      });
     }
 
     res.setHeader('Content-Type', 'text/event-stream');

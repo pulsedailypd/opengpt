@@ -1,228 +1,156 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark" data-size="medium">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Log in to OpenGPT</title>
+  <title>OpenGPT</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-  <style>
-    :root { --ink:#0f1320; --panel:#151a2a; --panel-2:#1b2135; --line:#262d45; --text:#e9ecf5; --muted:#8d96b0; --cobalt:#5b8def; --cobalt-d:#4676d9; --amber:#ffb84d; --danger:#ff7b7b; }
-    * { box-sizing: border-box; }
-    html, body { height: 100%; margin: 0; }
-    body { background: radial-gradient(900px 500px at 50% 120%, #1a2350 0%, transparent 60%), var(--ink); color: var(--text); font-family: "IBM Plex Sans", system-ui, sans-serif; display: grid; place-items: center; padding: 20px; -webkit-font-smoothing: antialiased; }
-    .card { width: min(420px, 100%); background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 32px; }
-    .brand { display: flex; align-items: center; gap: 12px; font-family: "Bricolage Grotesque", system-ui, sans-serif; font-weight: 800; font-size: 22px; margin-bottom: 24px; }
-    .mark { width: 28px; height: 28px; border-radius: 50%; border: 3px solid var(--cobalt); position: relative; }
-    .mark::after { content: ""; position: absolute; inset: 4px; border-radius: 50%; background: var(--cobalt); }
-    h1 { font-family: "Bricolage Grotesque", system-ui, sans-serif; font-size: 28px; letter-spacing: -0.02em; margin: 0 0 6px; }
-    .sub { color: var(--muted); margin: 0 0 22px; }
-    .tabs { display: grid; grid-template-columns: 1fr 1fr; background: var(--ink); border: 1px solid var(--line); border-radius: 12px; padding: 4px; margin-bottom: 20px; }
-    .tabs button { background: none; border: 0; color: var(--muted); padding: 9px; border-radius: 9px; font: inherit; font-weight: 500; cursor: pointer; }
-    .tabs button[aria-selected="true"] { background: var(--panel-2); color: var(--text); }
-    label { display: block; font-size: 14px; font-weight: 500; margin: 14px 0 6px; }
-    input { width: 100%; background: var(--ink); border: 1px solid var(--line); color: var(--text); border-radius: 12px; padding: 12px 14px; font: inherit; }
-    input:focus { outline: 2px solid var(--cobalt); outline-offset: 1px; border-color: transparent; }
-    .btn { width: 100%; border: 0; border-radius: 12px; padding: 13px; font: inherit; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; }
-    .primary { background: var(--cobalt); color: #fff; margin-top: 20px; }
-    .primary:hover { background: var(--cobalt-d); }
-    .google { background: #fff; color: #1f1f1f; }
-    .google:hover { background: #f0f0f0; }
-    .btn:disabled { opacity: 0.6; cursor: wait; }
-    .or { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 13px; margin: 20px 0; }
-    .or::before, .or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
-    .link { background: none; border: 0; color: var(--cobalt); font: inherit; font-size: 14px; cursor: pointer; padding: 0; margin-top: 14px; }
-    .msg { border-radius: 10px; padding: 10px 12px; font-size: 14px; margin-bottom: 16px; }
-    .msg.err { background: #2a1519; color: var(--danger); border: 1px solid #4a2128; }
-    .msg.ok { background: #122419; color: #7ee0a3; border: 1px solid #1d4029; }
-    .center { text-align: center; color: var(--muted); }
-    .hidden { display: none !important; }
-    :focus-visible { outline: 2px solid var(--cobalt); outline-offset: 2px; }
-  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script>
+    // Apply the saved theme before first paint so there is no flash.
+    (function () {
+      var t = localStorage.getItem('opengpt_theme') || 'system';
+      var dark = t === 'dark' || (t === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    })();
+  </script>
 </head>
 <body>
-<main class="card">
-  <div class="brand"><span class="mark"></span>OpenGPT</div>
 
-  <div id="loading" class="center">Signing you in…</div>
-
-  <div id="form" class="hidden">
-    <h1 id="title">Log in</h1>
-    <p class="sub" id="sub">Welcome back. Pick up where you left off.</p>
-    <div id="notice" class="msg hidden" role="alert"></div>
-
-    <button id="googleBtn" class="btn google" type="button">
-      <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.5-4.1 7-10.2 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.2.8-4.7l-7.9-6.1A24 24 0 0 0 0 24c0 3.9.9 7.5 2.6 10.8l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 12-2.1 16-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.4 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg>
-      Continue with Google
-    </button>
-    <div class="or">or use email</div>
-
-    <form id="emailForm" novalidate>
-      <div id="nameRow" class="hidden">
-        <label for="name">Name</label>
-        <input id="name" type="text" autocomplete="name">
+<!-- Login screen (shown when signed out) -->
+<main id="login" class="login hidden">
+  <section class="login-hero">
+    <div class="brand"><span class="brand-mark"></span>OpenGPT</div>
+    <div class="hero-copy">
+      <h1>Say “Hey Open”. Then just ask.</h1>
+      <p>Type, talk, or show it a picture. Sign in once and your chats stay on this device.</p>
+      <div class="wave" aria-hidden="true">
+        <i style="--h:18px;--d:0s"></i><i style="--h:34px;--d:.1s"></i><i style="--h:52px;--d:.2s"></i><i style="--h:28px;--d:.3s"></i>
+        <i style="--h:44px;--d:.4s"></i><i style="--h:56px;--d:.5s"></i><i style="--h:30px;--d:.6s"></i><i style="--h:42px;--d:.7s"></i>
+        <i style="--h:20px;--d:.8s"></i><i style="--h:36px;--d:.9s"></i><i style="--h:24px;--d:1s"></i>
       </div>
-      <label for="email">Email</label>
-      <input id="email" type="email" autocomplete="email" required>
-      <label for="password">Password</label>
-      <input id="password" type="password" autocomplete="current-password" minlength="6" required>
-      <button id="submitBtn" class="btn primary" type="submit">Log in</button>
-    </form>
-    <button id="forgotBtn" class="link" type="button">Forgot your password?</button>
-  </div>
-
-  <div id="blocked" class="msg err hidden" role="alert"></div>
+    </div>
+    <div class="fine">OpenGPT</div>
+  </section>
+  <section class="login-panel">
+    <div class="login-card">
+      <h2>Welcome back</h2>
+      <p>Log in to start chatting.</p>
+      <button id="loginBtn" class="btn">Log in</button>
+      <div class="fine">You’ll go to our secure sign-in page and come straight back here.</div>
+    </div>
+  </section>
 </main>
 
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-  import {
-    getAuth, onAuthStateChanged, signOut, signInWithPopup, GoogleAuthProvider,
-    signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, sendPasswordResetEmail
-  } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+<!-- Chat app (shown when signed in) -->
+<div id="app" class="app hidden">
+  <aside id="sidebar" class="sidebar">
+    <div class="side-top">
+      <div class="brand"><span class="brand-mark"></span>OpenGPT</div>
+      <button id="newChat" class="new-chat">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        New chat
+      </button>
+    </div>
+    <div id="chatList" class="chat-list" role="list"></div>
+    <div class="side-bottom">
+      <div class="profile">
+        <div id="avatar"></div>
+        <div class="profile-meta"><b id="userName"></b><small id="userEmail"></small></div>
+        <button id="settingsBtn" class="icon-btn small" title="Settings" aria-label="Settings">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+        </button>
+        <button id="logoutBtn" class="link-btn">Log out</button>
+      </div>
+    </div>
+  </aside>
 
-  /* =====================  EDIT THESE  ===================== */
-  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyCEqVT9IjaoiGEtWtN6tZwHqaZ8HzPzG34",
-  authDomain: "open-gpt2013.firebaseapp.com",
-  projectId: "open-gpt2013",
-  storageBucket: "open-gpt2013.firebasestorage.app",
-  messagingSenderId: "451249567875",
-  appId: "1:451249567875:web:3ba7c595169bd7acba03b6",
-  measurementId: "G-GCZTCQDZV7"
-};
-  // Only these app addresses may receive a login. This stops attackers from using this page to steal sign-ins.
-  const ALLOWED_APP_ORIGINS = [
-    "http://localhost:3000",
-    // "https://your-opengpt-domain.com",
-  ];
-  /* ======================================================== */
+  <section class="main">
+    <header class="topbar">
+      <button id="menuBtn" class="menu-btn" aria-label="Open chat list">☰</button>
+      <div id="topTitle" class="top-title">New chat</div>
+      <button id="wakeBtn" class="wake" aria-pressed="false" title="Listen for “Hey Open”">
+        <span class="dot"></span><span class="label" id="wakeLabel">Hey Open: off</span>
+      </button>
+    </header>
 
-  const $ = (id) => document.getElementById(id);
-  const params = new URLSearchParams(location.search);
-  const redirect = params.get('redirect');
-  const wantsLogout = params.get('logout') === '1';
+    <div id="messages" class="messages" aria-live="polite"></div>
 
-  let holdFinish = false; // pauses the auto-redirect while a new account's name is being saved
-  let target = null;
-  try {
-    const u = new URL(redirect);
-    if (ALLOWED_APP_ORIGINS.includes(u.origin)) target = u;
-  } catch { /* invalid */ }
+    <div class="composer-wrap">
+      <div class="composer-box">
+        <div id="attachments" class="attachments hidden"></div>
+        <div class="composer">
+          <button id="attachBtn" class="icon-btn" title="Attach an image" aria-label="Attach an image">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="1.8"/><path d="m21 15-5-5L5 21"/></svg>
+          </button>
+          <input id="fileInput" type="file" accept="image/*" multiple hidden>
+          <textarea id="input" rows="1" placeholder="Message OpenGPT" aria-label="Message"></textarea>
+          <button id="micBtn" class="icon-btn" title="Dictate a message" aria-label="Dictate a message">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+          </button>
+          <button id="sendBtn" class="icon-btn send" title="Send" aria-label="Send">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="footnote">OpenGPT can make mistakes. Check important information.</div>
+    </div>
+  </section>
+</div>
 
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
+<!-- Settings -->
+<dialog id="settings" class="modal" aria-labelledby="settingsTitle">
+  <div class="modal-head">
+    <h2 id="settingsTitle">Settings</h2>
+    <button id="closeSettings" class="icon-btn small" aria-label="Close settings">✕</button>
+  </div>
+  <div class="modal-body">
+    <div class="field">
+      <span class="field-label">Theme</span>
+      <div class="seg" id="themeSeg" role="group" aria-label="Theme">
+        <button type="button" data-v="system">System</button>
+        <button type="button" data-v="light">Light</button>
+        <button type="button" data-v="dark">Dark</button>
+      </div>
+    </div>
+    <div class="field">
+      <span class="field-label">Text size</span>
+      <div class="seg" id="sizeSeg" role="group" aria-label="Text size">
+        <button type="button" data-v="small">Small</button>
+        <button type="button" data-v="medium">Medium</button>
+        <button type="button" data-v="large">Large</button>
+      </div>
+    </div>
+    <div class="field">
+      <label class="field-label" for="speakMode">Read replies aloud</label>
+      <select id="speakMode">
+        <option value="voice">Only after a voice question</option>
+        <option value="always">Always</option>
+        <option value="never">Never</option>
+      </select>
+    </div>
+    <div class="field">
+      <label class="field-label" for="voiceSel">Voice</label>
+      <select id="voiceSel"></select>
+    </div>
+    <div class="field">
+      <label class="field-label" for="instructions">Custom instructions</label>
+      <textarea id="instructions" rows="4" maxlength="1500" placeholder="For example: Answer briefly. Explain code step by step."></textarea>
+      <small>Applied to every message you send.</small>
+    </div>
+    <div class="field">
+      <span class="field-label">Your data</span>
+      <button id="clearChats" class="btn-sm danger" type="button">Delete all chats</button>
+      <small>Chats are stored in this browser only.</small>
+    </div>
+  </div>
+</dialog>
 
-  function showBlocked(text) {
-    $('loading').classList.add('hidden'); $('form').classList.add('hidden');
-    $('blocked').textContent = text; $('blocked').classList.remove('hidden');
-  }
+<div id="toast" class="toast hidden" role="status"></div>
 
-  if (!target) {
-    let got = 'nothing (the page was opened without ?redirect=)';
-    try { if (redirect) got = new URL(redirect).origin; } catch { got = 'an invalid address: ' + redirect; }
-    showBlocked(
-      'Sign-in blocked. This page received: ' + got +
-      '. Allowed app addresses: ' + ALLOWED_APP_ORIGINS.join(', ') +
-      '. Open your app at one of those exact addresses and press Log in, or add the received address to ALLOWED_APP_ORIGINS in auth-site/index.html and redeploy.'
-    );
-  } else {
-    start();
-  }
-
-  async function start() {
-    if (wantsLogout) await signOut(auth);
-    onAuthStateChanged(auth, (user) => {
-      if (user && !wantsLogout && !holdFinish) finish(user);
-      else { $('loading').classList.add('hidden'); $('form').classList.remove('hidden'); }
-    });
-  }
-
-  // Sends the person back to the app, signed in.
-  async function finish(user) {
-    $('form').classList.add('hidden'); $('loading').classList.remove('hidden');
-    const idToken = await user.getIdToken(true);
-    const url = new URL(target.toString());
-    // The hash is never sent to any server, so the token stays between the browser and the app.
-    url.hash = new URLSearchParams({ token: idToken, refresh: user.refreshToken }).toString();
-    location.replace(url.toString());
-  }
-
-  function notice(text, kind = 'err') {
-    const n = $('notice'); n.textContent = text; n.className = 'msg ' + kind;
-  }
-  const friendly = (e) => ({
-    'auth/invalid-credential': 'Wrong email or password.',
-    'auth/invalid-email': 'Enter a valid email address.',
-    'auth/user-not-found': 'No account with that email. Try “Sign up”.',
-    'auth/wrong-password': 'Wrong email or password.',
-    'auth/email-already-in-use': 'That email already has an account. Try logging in.',
-    'auth/weak-password': 'Use a password with at least 6 characters.',
-    'auth/too-many-requests': 'Too many attempts. Wait a bit and try again.',
-    'auth/popup-closed-by-user': 'The Google window was closed before finishing.',
-    'auth/popup-blocked': 'Your browser blocked the Google window. Allow pop-ups and try again.',
-    'auth/unauthorized-domain': 'This domain is not authorized in Firebase. Add it under Authentication > Settings > Authorized domains.',
-    'auth/operation-not-allowed': 'This sign-in method is not turned on in Firebase yet.',
-    'auth/network-request-failed': 'Network problem. Check your connection.'
-  }[e.code] || 'Something went wrong. Please try again.');
-
-  /* Log in / Sign up toggle */
-  let signup = false;
-  function setMode(isSignup) {
-    signup = isSignup;
-    $('title').textContent = isSignup ? 'Create your account' : 'Log in';
-    $('sub').textContent = isSignup ? 'It takes a few seconds.' : 'Welcome back. Pick up where you left off.';
-    $('submitBtn').textContent = isSignup ? 'Create account' : 'Log in';
-    $('nameRow').classList.toggle('hidden', !isSignup);
-    $('password').autocomplete = isSignup ? 'new-password' : 'current-password';
-    $('forgotBtn').classList.toggle('hidden', isSignup);
-    $('notice').className = 'msg hidden';
-    $('toggleBtn').textContent = isSignup ? 'Already have an account? Log in' : 'New here? Create an account';
-  }
-  const toggle = document.createElement('button');
-  toggle.id = 'toggleBtn'; toggle.type = 'button'; toggle.className = 'link';
-  toggle.style.display = 'block';
-  $('forgotBtn').after(toggle);
-  toggle.onclick = () => setMode(!signup);
-  setMode(false);
-
-  async function run(btn, fn) {
-    btn.disabled = true; $('notice').className = 'msg hidden';
-    try { await fn(); } catch (e) { notice(friendly(e)); } finally { btn.disabled = false; }
-  }
-
-  $('googleBtn').onclick = () => run($('googleBtn'), () => signInWithPopup(auth, new GoogleAuthProvider()));
-
-  $('emailForm').onsubmit = (ev) => {
-    ev.preventDefault();
-    const email = $('email').value.trim(), pass = $('password').value;
-    if (!email || !pass) return notice('Enter your email and password.');
-    run($('submitBtn'), async () => {
-      if (signup) {
-        holdFinish = true;
-        try {
-          const cred = await createUserWithEmailAndPassword(auth, email, pass);
-          const name = $('name').value.trim();
-          if (name) await updateProfile(cred.user, { displayName: name });
-          holdFinish = false;
-          await finish(cred.user);
-        } finally { holdFinish = false; }
-      } else {
-        await signInWithEmailAndPassword(auth, email, pass);
-      }
-    });
-  };
-
-  $('forgotBtn').onclick = () => {
-    const email = $('email').value.trim();
-    if (!email) return notice('Type your email above first, then press “Forgot your password?”.');
-    run($('forgotBtn'), async () => {
-      await sendPasswordResetEmail(auth, email);
-      notice('Check your inbox for a password reset link.', 'ok');
-    });
-  };
-</script>
+<script src="config.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
